@@ -93,9 +93,9 @@ def start():
                         print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}{extracted_message}{Style.RESET_ALL}')
                 elif message.content.startswith('That is the wrong pokémon!'):
                     print(f'[{timestamp}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}')
-                            timer = random.uniform(3, 5)
-                            await asyncio.sleep(timer)
-                            await message.channel.send('<@%s> h' % poketwo)
+                    timer = random.uniform(3, 5)
+                    await asyncio.sleep(timer)
+                    await message.channel.send('<@%s> h' % poketwo)
 
         except Exception as e:
             print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
