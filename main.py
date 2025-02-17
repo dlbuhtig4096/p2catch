@@ -10,7 +10,7 @@ import os
 import base64
 
 with open('config.json', 'r', encoding='utf-8') as f:
-    Config = json.loads(f)
+    Config = json.load(f)
 
 init()
 current_datetime = datetime.datetime.now()
