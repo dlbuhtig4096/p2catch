@@ -23,7 +23,7 @@ def find_word(words, user_input):
         if len(word) != len(user_input): continue
             
         for c, d in zip(word, user_input):
-            if c != '_' and c != d: break
+            if d != "_" and c != d: break
         else:
             return word
 
