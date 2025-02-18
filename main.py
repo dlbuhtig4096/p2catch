@@ -36,6 +36,7 @@ def print_banner():
 def helper():
     bot = commands.Bot(command_prefix='!')
     SPAWN = int(Config["spawn"])
+    SPAM = Config["spam"]
 
     async def send_message(channel_id, message):
         try:
@@ -46,7 +47,17 @@ def helper():
 
     @bot.event
     async def on_ready():
-        return
+        print_banner()
+        print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}')
+        pause = False
+        while True:
+            if not pause:
+                timer = random.uniform(1.5, 2)
+                await send_message(SPAM, base64.b64encode(os.urandom(15)).decode())
+                await asyncio.sleep(timer)
+            else:
+                await asyncio.sleep(5)
+                pause = False
 
     @bot.event
     async def on_message(message):
@@ -70,7 +81,7 @@ def helper():
         except Exception as e:
             print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
 
-    bot.run(Config["helper"])
+    bot.run(Config["help"])
 
 def main():
     bot = commands.Bot(command_prefix='!')
@@ -88,16 +99,7 @@ def main():
     async def on_ready():
         print_banner()
         print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}')
-        print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}Bot Is Ready...{Style.RESET_ALL}')
-        pause = False
-        while True:
-            if not pause:
-                timer = random.uniform(1.5, 2)
-                await send_message(SPAM, base64.b64encode(os.urandom(15)).decode())
-                await asyncio.sleep(timer)
-            else:
-                await asyncio.sleep(5)
-                pause = False
+        return
 
     @bot.event
     async def on_message(message):
