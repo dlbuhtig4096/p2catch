@@ -35,5 +35,5 @@ exe = EXE(
     upx_exclude = [],
     runtime_tmpdir = None,
     console = True ,
-    icon = "google.ico"
+    icon = "p2.ico"
 )

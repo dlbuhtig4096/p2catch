@@ -1,4 +1,3 @@
-from banner import Banner
 from discord.ext import commands
 from colorama import Fore, Style, init
 import asyncio
@@ -8,6 +7,22 @@ import re
 import datetime
 import os
 import base64
+
+class Banner:
+    @staticmethod
+    def get_banner():
+        return """   
+  _____      _     __ _                 
+ |  __ \    | |   /_/| |                
+ | |__) |__ | | _____| |___      _____  
+ |  ___/ _ \| |/ / _ \ __\ \ /\ / / _ \ 
+ | |  | (_) |   <  __/ |_ \ V  V / (_) |
+ |_|   \___/|_|\_\___|\__| \_/\_/ \___/ 
+
+ Version : v1.0.0 (FREE VERSION)
+ Discord : @ZLucifer_
+ Github  : https://github.com/CallMeDimas
+        """
 
 Config = json.load(
     open('config.json', 'r', encoding='utf-8')
