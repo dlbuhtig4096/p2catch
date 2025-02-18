@@ -62,18 +62,16 @@ def helper():
     @bot.event
     async def on_message(message):
         try:
-            if message.channel.id == SPAWN:
-                if message.author.id == int(poketwo):
-                    if message.embeds:
-                        embed_title = message.embeds[0].title
-                        if 'wild pokémon has appeared!' in embed_title:
-                            timer = random.uniform(1.5, 3)
-                            await asyncio.sleep(timer)
-                            await message.channel.send('<@%s> h' % poketwo)
-                            pause = True
+            if message.author.id == poketwo and message.channel.id == SPAWN:
+                if message.embeds:
+                    embed_title = message.embeds[0].title
+                    if 'wild pokémon has appeared!' in embed_title:
+                        timer = random.uniform(1.5, 3)
+                        await asyncio.sleep(timer)
+                        await message.channel.send('<@%s> h' % poketwo)
+                        pause = True
 
-            if message.author.id == int(poketwo) and message.channel.id == SPAWN:
-                if message.content.startswith('That is the wrong pokémon!'):
+                elif message.content.startswith('That is the wrong pokémon!'):
                     timer = random.uniform(3, 5)
                     await asyncio.sleep(timer)
                     await message.channel.send('<@%s> h' % poketwo)
@@ -104,9 +102,10 @@ def farmer():
     @bot.event
     async def on_message(message):
         try:
-            if message.author.id == int(poketwo) and message.channel.id == SPAWN:
-                if message.content.startswith('The pokémon is '):
-                    extracted_word = message.content[len('The pokémon is '):].strip('.').strip().replace('\\', '')
+            content = message.content
+            if message.author.id == poketwo and message.channel.id == SPAWN:
+                if content.startswith('The pokémon is '):
+                    extracted_word = content[len('The pokémon is '):].strip('.').strip().replace('\\', '')
                     print(f'[{timestamp}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{extracted_word}')
                     result = find_word(words, extracted_word)
                     if result:
@@ -115,13 +114,13 @@ def farmer():
                     else:
                         print(f"[{timestamp}] [ERROR] - {Fore.RED}Pokemon Not Founded In Database{Style.RESET_ALL}")
 
-            if message.author.id == int(poketwo) and message.channel.id == SPAWN:
-                if message.content.startswith('Congratulations'):
-                    match = re.search(r'Congratulations <@\d+>! (.+)', message.content)
+                elif content.startswith('Congratulations'):
+                    match = re.search(r'Congratulations <@\d+>! (.+)', content)
                     if match:
                         extracted_message = match.group(1)
                         print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}{extracted_message}{Style.RESET_ALL}')
-                else:
+
+                elif content.startswith('That is the wrong pokémon!'):
                     print(f'[{timestamp}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}')
 
         except Exception as e:
