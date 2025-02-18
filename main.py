@@ -81,9 +81,9 @@ def helper():
         except Exception as e:
             print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
 
-    bot.run(Config["help"])
+    return bot
 
-def main():
+def farmer():
     bot = commands.Bot(command_prefix='!')
     SPAWN = int(Config["spawn"])
     SPAM = Config["spam"]
@@ -130,7 +130,10 @@ def main():
     with open('pokemon.json', 'r', encoding='utf-8') as f:
         words = json.load(f)
 
-    bot.run(Config["token"])
+    return bot
 
-helper()
-main()
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+loop.create_task(helper().start(Config["help"]))
+loop.create_task(farmer().start(Config["token"]))
+loop.run_forever()
