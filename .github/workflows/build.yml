@@ -2,7 +2,7 @@ name: Build Workflow
 
 on:
   push:
-#    branches: master
+    branches: main
 
 jobs:
   build-windows:
@@ -21,10 +21,18 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pyinstaller
+          pip uninstall -y discord.py
+          pip uninstall -y discord.py-self
+          pip install discord.py-self
 
       - name: Run PyInstaller
         run: |
           python -m PyInstaller main.spec
+
+      - name: Get Version
+        shell: bash
+        id: app-version
+        run: echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Create release
         id: create_release
@@ -32,8 +40,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: nightly
-          release_name: ${{ github.sha }}
+          tag_name: ${{ steps.app-version.outputs.commit }}
+          release_name: ${{ steps.app-version.outputs.commit }}
           body: |
             Nightly build
           draft: false

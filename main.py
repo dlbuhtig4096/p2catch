@@ -8,20 +8,13 @@ import datetime
 import os
 import base64
 
-class Banner:
-    @staticmethod
-    def get_banner():
-        return """   
+Banner = """
   _____      _     __ _                 
  |  __ \    | |   /_/| |                
  | |__) |__ | | _____| |___      _____  
  |  ___/ _ \| |/ / _ \ __\ \ /\ / / _ \ 
  | |  | (_) |   <  __/ |_ \ V  V / (_) |
  |_|   \___/|_|\_\___|\__| \_/\_/ \___/ 
-
- Version : v1.0.0 (FREE VERSION)
- Discord : @ZLucifer_
- Github  : https://github.com/CallMeDimas
         """
 
 Config = json.load(
@@ -46,7 +39,7 @@ def find_word(words, user_input):
 
 def print_banner():
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(Fore.YELLOW, Banner.get_banner(), Style.RESET_ALL)
+    print(Fore.YELLOW, Banner, Style.RESET_ALL)
 
 def helper():
     bot = commands.Bot(command_prefix='!')
