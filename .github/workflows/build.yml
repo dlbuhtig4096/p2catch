@@ -2,7 +2,7 @@ name: Build Workflow
 
 on:
   push:
-#    branches: master
+    branches: main
 
 jobs:
   build-windows:
@@ -21,6 +21,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pyinstaller
+          pip uninstall discord.py-self
+          pip uninstall discord.py
+          pip install discord.py-self
 
       - name: Run PyInstaller
         run: |
