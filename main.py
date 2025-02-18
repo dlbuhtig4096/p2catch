@@ -72,8 +72,7 @@ def helper():
                         pause = True
 
                 elif message.content.startswith('That is the wrong pokémon!'):
-                    timer = random.uniform(3, 5)
-                    await asyncio.sleep(timer)
+                    await asyncio.sleep(5)
                     await message.channel.send('<@%s> h' % poketwo)
 
         except Exception as e:
