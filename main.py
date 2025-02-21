@@ -42,9 +42,10 @@ def print_banner():
     print(Fore.YELLOW, Banner, Style.RESET_ALL)
 
 def helper():
-    bot = commands.Bot(command_prefix='!')
+    bot = commands.Bot(command_prefix = "!")
     SPAWN = int(Config["spawn"])
     SPAM = Config["spam"]
+    pause = False
 
     async def send_message(channel_id, message):
         try:
@@ -56,36 +57,29 @@ def helper():
     @bot.event
     async def on_ready():
         print_banner()
-        print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}')
-        pause = False
+        print(f"[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}")
         while True:
-            if not pause:
-                timer = random.uniform(1.5, 2)
-                await send_message(SPAM, base64.b64encode(os.urandom(15)).decode())
-                await asyncio.sleep(timer)
+            t = 4.0
+            if pause:
+                await send_message(SPAWN, "<@%s> h" % poketwo)
             else:
-                await asyncio.sleep(5)
-                pause = False
+                await send_message(SPAM, base64.b64encode(os.urandom(15)).decode())
+                t = random.uniform(1.5, 2.0)
+            await asyncio.sleep(t)
 
     @bot.event
     async def on_message(message):
+        nonlocal pause
+        
         try:
             if message.author.id == poketwo and message.channel.id == SPAWN:
                 content = message.content
                 if message.embeds:
                     embed_title = message.embeds[0].title
-                    if 'wild pokémon has appeared!' in embed_title:
-                        timer = random.uniform(1.5, 3)
-                        await asyncio.sleep(timer)
-                        await message.channel.send('<@%s> h' % poketwo)
-                        pause = True
+                    if "wild pokémon has appeared!" in embed_title: pause = True
 
-                elif content.startswith('Congratulations'):
-                    await message.guild.ack()
-
-                elif content.startswith('That is the wrong pokémon!'):
-                    await asyncio.sleep(5)
-                    await message.channel.send('<@%s> h' % poketwo)
+                elif content.startswith("Congratulations"):
+                    if re.search(r"Congratulations <@\d+>! (.+)", content): pause = False
 
         except Exception as e:
             print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
@@ -93,7 +87,7 @@ def helper():
     return bot
 
 def farmer():
-    bot = commands.Bot(command_prefix='!')
+    bot = commands.Bot(command_prefix = "!")
     SPAWN = int(Config["spawn"])
     SPAM = Config["spam"]
 
@@ -108,32 +102,33 @@ def farmer():
         try:
             if message.author.id == poketwo and message.channel.id == SPAWN:
                 content = message.content
-                if content.startswith('The pokémon is '):
-                    extracted_word = content[len('The pokémon is '):].strip('.').strip().replace('\\', '')
-                    print(f'[{timestamp}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{extracted_word}')
+                if content.startswith("The pokémon is "):
+                    extracted_word = content[len("The pokémon is "):].strip(".").strip().replace("\\", "")
+                    print(f"[{timestamp}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{extracted_word}")
                     result = find_word(words, extracted_word)
                     if result:
-                        await message.channel.send('<@%s> c %s' % (poketwo, result))
+                        await message.channel.send("<@%s> c %s" % (poketwo, result))
                         print(f"[{timestamp}] [HINT] - {Fore.LIGHTGREEN_EX}Search Result: {Style.RESET_ALL}{result}")
                     else:
                         print(f"[{timestamp}] [ERROR] - {Fore.RED}Pokemon Not Founded In Database{Style.RESET_ALL}")
 
-                elif content.startswith('Congratulations'):
-                    match = re.search(r'Congratulations <@\d+>! (.+)', content)
+                elif content.startswith("Congratulations"):
+                    match = re.search(r"Congratulations <@\d+>! (.+)", content)
                     if match:
                         extracted_message = match.group(1)
-                        print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}{extracted_message}{Style.RESET_ALL}')
+                        print(f"[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}{extracted_message}{Style.RESET_ALL}")
                     await message.guild.ack()
 
-                elif content.startswith('That is the wrong pokémon!'):
-                    print(f'[{timestamp}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}')
+                elif content.startswith("That is the wrong pokémon!"):
+                    print(f"[{timestamp}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
 
 
         except Exception as e:
             print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
 
-    with open('pokemon.json', 'r', encoding='utf-8') as f:
-        words = json.load(f)
+    words = json.load(
+        open("pokemon.json", "r", encoding = "utf-8")
+    )
 
     return bot
 
