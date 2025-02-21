@@ -71,6 +71,7 @@ def helper():
     async def on_message(message):
         try:
             if message.author.id == poketwo and message.channel.id == SPAWN:
+                content = message.content
                 if message.embeds:
                     embed_title = message.embeds[0].title
                     if 'wild pokémon has appeared!' in embed_title:
@@ -79,7 +80,10 @@ def helper():
                         await message.channel.send('<@%s> h' % poketwo)
                         pause = True
 
-                elif message.content.startswith('That is the wrong pokémon!'):
+                elif content.startswith('Congratulations'):
+                    await message.guild.ack()
+
+                elif content.startswith('That is the wrong pokémon!'):
                     await asyncio.sleep(5)
                     await message.channel.send('<@%s> h' % poketwo)
 
@@ -93,13 +97,6 @@ def farmer():
     SPAWN = int(Config["spawn"])
     SPAM = Config["spam"]
 
-    async def send_message(channel_id, message):
-        try:
-            channel = bot.get_channel(int(channel_id))
-            await channel.send(message)
-        except Exception as e:
-            print(f"{Fore.RED}Error in send_message: {e}{Style.RESET_ALL}")
-
     @bot.event
     async def on_ready():
         print_banner()
@@ -109,8 +106,8 @@ def farmer():
     @bot.event
     async def on_message(message):
         try:
-            content = message.content
             if message.author.id == poketwo and message.channel.id == SPAWN:
+                content = message.content
                 if content.startswith('The pokémon is '):
                     extracted_word = content[len('The pokémon is '):].strip('.').strip().replace('\\', '')
                     print(f'[{timestamp}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{extracted_word}')
@@ -126,9 +123,11 @@ def farmer():
                     if match:
                         extracted_message = match.group(1)
                         print(f'[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}{extracted_message}{Style.RESET_ALL}')
+                    await message.guild.ack()
 
                 elif content.startswith('That is the wrong pokémon!'):
                     print(f'[{timestamp}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}')
+
 
         except Exception as e:
             print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
@@ -141,5 +140,5 @@ def farmer():
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 loop.create_task(helper().start(Config["help"]))
-loop.create_task(farmer().start(Config["token"]))
+loop.create_task(farmer().start(Config["farm"]))
 loop.run_forever()
