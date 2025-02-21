@@ -23,7 +23,7 @@ jobs:
           pip install pyinstaller
           pip uninstall -y discord.py
           pip uninstall -y discord.py-self
-          pip install discord.py-self
+          pip install -U git+https://github.com/dolfies/discord.py-self
 
       - name: Run PyInstaller
         run: |
