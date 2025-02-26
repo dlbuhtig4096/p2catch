@@ -8,14 +8,6 @@ import datetime
 import os
 import base64
 
-Config = json.load(
-    open("config.json", "r", encoding = "utf-8")
-)
-
-POKETWO = 716390085896962058
-SPAWN = Config["spawn"]
-SPAM = Config["spam"]
-
 class Repo(dict):
     _ = set()
 
@@ -42,9 +34,17 @@ Pokemon = Repo(
     )
 )
 
+Config = json.load(
+    open("config.json", "r", encoding = "utf-8")
+)
+
+now = lambda : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+POKETWO = 716390085896962058
+SPAWN = Config["spawn"]
+SPAM = Config["spam"]
+
 init()
-current_datetime = datetime.datetime.now()
-timestamp = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 print(
     Fore.YELLOW,
@@ -72,9 +72,9 @@ def helper():
 
     @bot.event
     async def on_ready():
-        print(f"[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}")
+        print(f"[{now()}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}")
         while True:
-            t = 4.0
+            t = 5.0
             if pause:
                 await send_message(SPAWN, "<@%s> h" % POKETWO)
             else:
@@ -97,7 +97,7 @@ def helper():
                     if re.search(r"Congratulations <@\d+>! (.+)", content): pause = False
 
         except Exception as e:
-            print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
+            print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
 
     return bot
 
@@ -106,7 +106,7 @@ def farmer():
 
     @bot.event
     async def on_ready():
-        print(f"[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}")
+        print(f"[{now()}] [INFO] - {Fore.LIGHTGREEN_EX}Logged on as {bot.user}{Style.RESET_ALL}")
         return
 
     @bot.event
@@ -116,32 +116,33 @@ def farmer():
                 content = message.content
                 if content.startswith("The pokémon is "):
                     hint = content[len("The pokémon is "):].strip(".").strip().replace("\\", "")
-                    print(f"[{timestamp}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{hint}")
+                    print(f"[{now()}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{hint}")
                     result = Pokemon.find(hint)
                     if result:
                         await message.channel.send("<@%s> c %s" % (POKETWO, result))
-                        print(f"[{timestamp}] [HINT] - {Fore.LIGHTGREEN_EX}Search Result: {Style.RESET_ALL}{result}")
+                        print(f"[{now()}] [HINT] - {Fore.LIGHTGREEN_EX}Search Result: {Style.RESET_ALL}{result}")
                     else:
-                        print(f"[{timestamp}] [ERROR] - {Fore.RED}Pokemon Not Founded In Database{Style.RESET_ALL}")
+                        print(f"[{now()}] [ERROR] - {Fore.RED}Pokemon Not Founded In Database{Style.RESET_ALL}")
 
                 elif content.startswith("Congratulations"):
                     match = re.search(r"Congratulations <@\d+>! (.+)", content)
                     if match:
                         hint = match.group(1)
-                        print(f"[{timestamp}] [INFO] - {Fore.LIGHTGREEN_EX}{hint}{Style.RESET_ALL}")
+                        print(f"[{now()}] [INFO] - {Fore.LIGHTGREEN_EX}{hint}{Style.RESET_ALL}")
                     await message.guild.ack()
 
                 elif content.startswith("That is the wrong pokémon!"):
-                    print(f"[{timestamp}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
+                    print(f"[{now()}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
 
 
         except Exception as e:
-            print(f"[{timestamp}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
+            print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
 
     return bot
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-loop.create_task(helper().start(Config["help"]))
-loop.create_task(farmer().start(Config["farm"]))
-loop.run_forever()
+if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(helper().start(Config["help"]))
+    loop.create_task(farmer().start(Config["farm"]))
+    loop.run_forever()
