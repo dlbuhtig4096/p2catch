@@ -38,8 +38,6 @@ Config = json.load(
     open("config.json", "r", encoding = "utf-8")
 )
 
-now = lambda : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
 POKETWO = 716390085896962058
 SPAWN = Config["spawn"]
 SPAM = Config["spam"]
@@ -58,6 +56,8 @@ print(
     """,
     Style.RESET_ALL
 )
+
+now = lambda : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def helper():
     bot = commands.Bot(command_prefix = "!")
@@ -115,7 +115,7 @@ def farmer():
             if message.author.id == POKETWO and message.channel.id == SPAWN:
                 content = message.content
                 if content.startswith("The pokémon is "):
-                    hint = content[len("The pokémon is "):].strip(".").strip().replace("\\", "")
+                    hint = content[15 : -1].strip().replace("\\", "")
                     print(f"[{now()}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{hint}")
                     result = Pokemon.find(hint)
                     if result:
@@ -140,9 +140,11 @@ def farmer():
 
     return bot
 
-if __name__ == "__main__":
+def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.create_task(helper().start(Config["help"]))
     loop.create_task(farmer().start(Config["farm"]))
     loop.run_forever()
+
+if __name__ == "__main__": main()
