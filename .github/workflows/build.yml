@@ -36,24 +36,12 @@ jobs:
 
       - name: Create release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.app-version.outputs.commit }}
-          release_name: ${{ steps.app-version.outputs.commit }}
-          body: |
-            Nightly build
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{steps.create_release.outputs.upload_url}}
-          asset_path: dist/p2catch.exe
-          asset_name: p2catch.exe
-          asset_content_type: application/zip
+          tag_name: nightly
+          files: |
+            dist/p2catch.exe
+          token: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
+          replacesArtifacts: true
+          make_latest: true
