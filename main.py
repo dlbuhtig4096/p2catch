@@ -39,13 +39,13 @@ Config = json.load(
 )
 
 POKETWO = 716390085896962058
-PASSIST = 854233015475109888
 GUILD = Config["guild"]
 CATCH = Config["catch"]
 CHAT = Config["chat"]
 FARMER = Config["farmers"]
 HELPER = Config["helpers"]
 PLAYER = Config["players"]
+ASSIST = Config["assist"]
 
 init()
 
@@ -96,24 +96,53 @@ def helper(bots):
     chain = repeat(bots)
 
     wild = False
-    async def main():
-        while True:
-            await asyncio.sleep(3.5)
-            if wild: await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
+    if ASSIST:
+        wait = False
+        async def main():
+            nonlocal wait
+            while True:
+                await asyncio.sleep(5.0)
+                if not wild: continue
+                if wait:
+                    wait = False
+                    continue
+                await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
+        
+        @(bots[0]).event
+        async def on_message(message):
+            nonlocal wild, wait
+            try:
+                if message.author.id != POKETWO or message.channel.id != CATCH: return
+                if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
+                    wait = True
+                    wild = True
 
-    @(bots[0]).event
-    async def on_message(message):
-        nonlocal wild
-        try:
-            if message.author.id != POKETWO or message.channel.id != CATCH: return
-            if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
-                wild = True
+                elif message.content.startswith("Congratulations"):
+                    wild = False
 
-            elif message.content.startswith("Congratulations"):
-                wild = False
+            except Exception as e:
+                print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
 
-        except Exception as e:
-            print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
+    else:
+        async def main():
+            while True:
+                await asyncio.sleep(3.5)
+                if wild: await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
+
+        @(bots[0]).event
+        async def on_message(message):
+            nonlocal wild, wait
+            try:
+                if message.author.id != POKETWO or message.channel.id != CATCH: return
+                if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
+                    wild = True
+                    await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
+
+                elif message.content.startswith("Congratulations"):
+                    wild = False
+
+            except Exception as e:
+                print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
             
     return (main, )
 
@@ -146,12 +175,12 @@ def player(bots):
                 elif content.startswith("That is the wrong pokémon!"):
                     print(f"[{now()}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
             
-            if message.author.id == PASSIST and message.channel.id == CATCH:
+            if message.author.id == ASSIST and message.channel.id == CATCH:
                 content = message.content
                 if content.endswith("%"):
                     await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
-                elif content.startswith("Possible Pokémon: "):
-                    await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content.split(": ")[-1]))
+                # elif content.startswith("Possible Pokémon: "):
+                #     await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content.split(": ")[-1]))
 
         except Exception as e:
             print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
