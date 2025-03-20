@@ -120,7 +120,7 @@ def helper(bots):
                         wait = True
                         wild = True
 
-                    elif content.startswith("The pokémon is "):
+                    elif message.content.startswith("The pokémon is "):
                         hint = True
 
                     elif message.content.startswith("Congratulations") and hint:
@@ -150,7 +150,7 @@ def helper(bots):
                     wild = True
                     await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
 
-                elif content.startswith("The pokémon is "):
+                elif message.content.startswith("The pokémon is "):
                     hint = True
 
                 elif message.content.startswith("Congratulations") and hint:
