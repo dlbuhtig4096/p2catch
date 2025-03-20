@@ -96,6 +96,7 @@ def helper(bots):
     chain = repeat(bots)
 
     wild = False
+    hint = False
     if ASSIST:
         wait = False
         async def main():
@@ -110,15 +111,23 @@ def helper(bots):
         
         @(bots[0]).event
         async def on_message(message):
-            nonlocal wild, wait
+            nonlocal wild, wait, hint
             try:
-                if message.author.id != POKETWO or message.channel.id != CATCH: return
-                if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
-                    wait = True
-                    wild = True
+                if message.channel.id != CATCH: return
+                if message.author.id == POKETWO:
+                    if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
+                        hint = False
+                        wait = True
+                        wild = True
 
-                elif message.content.startswith("Congratulations"):
-                    wild = False
+                    elif content.startswith("The pokémon is "):
+                        hint = True
+
+                    elif message.content.startswith("Congratulations") and hint:
+                        wild = False                    
+
+                elif message.author.id == ASSIST:
+                    hint = True
 
             except Exception as e:
                 print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
@@ -131,14 +140,20 @@ def helper(bots):
 
         @(bots[0]).event
         async def on_message(message):
-            nonlocal wild, wait
+            nonlocal wild, hint
             try:
-                if message.author.id != POKETWO or message.channel.id != CATCH: return
+                if message.channel.id != CATCH: return
+
+                if message.author.id != POKETWO: return
                 if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
+                    hint = False
                     wild = True
                     await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
 
-                elif message.content.startswith("Congratulations"):
+                elif content.startswith("The pokémon is "):
+                    hint = True
+
+                elif message.content.startswith("Congratulations") and hint:
                     wild = False
 
             except Exception as e:
@@ -153,7 +168,8 @@ def player(bots):
     @(bots[0]).event
     async def on_message(message):
         try:
-            if message.author.id == POKETWO and message.channel.id == CATCH:
+            if message.channel.id != CATCH: return
+            if message.author.id == POKETWO:
                 content = message.content
                 if content.startswith("The pokémon is "):
                     hint = content[15 : -1].strip().replace("\\", "")
@@ -175,7 +191,7 @@ def player(bots):
                 elif content.startswith("That is the wrong pokémon!"):
                     print(f"[{now()}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
             
-            if message.author.id == ASSIST and message.channel.id == CATCH:
+            if message.author.id == ASSIST:
                 content = message.content
                 if content.endswith("%"):
                     await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
