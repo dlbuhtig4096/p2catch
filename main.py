@@ -195,8 +195,11 @@ def player(bots):
                 content = message.content
                 if content.endswith("%"):
                     await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
-                # elif content.startswith("Possible Pokémon: "):
-                #     await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content.split(": ")[-1]))
+                elif content.startswith("##"):
+                    if content.startswith("## <:"):
+                        await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content[3:].split("> ")[-1].split("【")[0]))
+                    else:
+                        await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content[3:].split(" <:")[0]))
 
         except Exception as e:
             print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
