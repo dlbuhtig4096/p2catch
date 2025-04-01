@@ -171,42 +171,62 @@ def helper(bots):
 def player(bots):
     if not bots: return ()
     chain = repeat(bots)
+    guess = repeat(["BADC","BCDA","BDAC","CADB","CDAB","CDBA","DABC","DCAB","DCBA"])
+
+    got = {channel: None for channel in CATCH}
 
     @(bots[0]).event
     async def on_message(message):
         try:
             channel = message.channel.id
             if channel not in CATCH: return
+            
             if message.author.id == POKETWO:
                 content = message.content
+                
                 if content.startswith("The pokémon is "):
                     hint = content[15 : -1].strip().replace("\\", "")
                     print(f"[{now()}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{hint}")
                     result = Pokemon.find(hint)
                     if result:
-                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, result))
+                        bot = next(chain)
+                        got[channel] = bot
+                        await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, result))
                         print(f"[{now()}] [HINT] - {Fore.LIGHTGREEN_EX}Search Result: {Style.RESET_ALL}{result}")
                     else:
                         print(f"[{now()}] [ERROR] - {Fore.RED}Pokemon Not Founded In Database{Style.RESET_ALL}")
-
+                    
                 elif content.startswith("Congratulations"):
                     match = re.search(r"Congratulations <@\d+>! (.+)", content)
                     if not match: return
                     hint = match.group(1)
                     print(f"[{now()}] [INFO] - {Fore.LIGHTGREEN_EX}{hint}{Style.RESET_ALL}")
+                    await guild_ack(got[channel], message.guild.id)
 
                 elif content.startswith("That is the wrong pokémon!"):
                     print(f"[{now()}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
+
+                elif message.embeds and message.embeds[0].title.endswith("This pokémon appears to be glitched!"):
+                    await channel_send(got[channel], channel, "<@%s> afd fix %s" % (POKETWO, next(guess)))
+
+                elif content.startswith("That's the wrong order!"):
+                    await channel_send(got[channel], channel, "<@%s> afd fix %s" % (POKETWO, next(guess)))
             
             if message.author.id == ASSIST:
                 content = message.content
+
                 if content.endswith("%"):
-                    await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
+                    bot = next(chain)
+                    got[channel] = bot
+                    await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
+
                 elif content.startswith("##"):
+                    bot = next(chain)
+                    got[channel] = bot
                     if content.startswith("## <:"):
-                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content[3:].split("> ")[-1].split("【")[0]))
+                        await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, content[3:].split("> ")[-1].split("【")[0]))
                     else:
-                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content[3:].split(" <:")[0]))
+                        await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, content[3:].split(" <:")[0]))
 
         except Exception as e:
             print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
