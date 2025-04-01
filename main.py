@@ -131,20 +131,20 @@ async def guild_ack(bot, guild):
 def farmer(bots):
     if not bots: return ()
     
-    wait = 3.0 / (len(bots) + 1.0)
-    def proc(channel):
-        async def main():
-            for bot in repeat(bots):
-                await asyncio.sleep(wait)
-                await channel_send(bot, channel, base64.b64encode(os.urandom(15)).decode())
-        return main
+    chain = repeat(CHAT)
+    wait = 3.0 / (len(bots) + 1.0) / len(CHAT)
+    async def main():
+        for bot in repeat(bots.values()):
+            await asyncio.sleep(wait)
+            await channel_send(bot, next(chain), base64.b64encode(os.urandom(15)).decode())
     
-    return (proc(channel) for channel in CHAT)
+    return (main, )
 
 def helper(bots):
     if not bots: return ()
-    chain = repeat(bots)
+    chain = repeat(bots.values())
 
+    client = next(bots.values().__iter__())
     wild = {channel: False for channel in CATCH}
     hint = {channel: False for channel in CATCH}
     if ASSIST:
@@ -161,7 +161,7 @@ def helper(bots):
                     await channel_send(next(chain), channel, "<@%s> h" % POKETWO)
             return main
         
-        @(bots[0]).event
+        @client.event
         async def on_message(message):
             nonlocal wild, wait, hint
             try:
@@ -193,7 +193,7 @@ def helper(bots):
                     if wild[channel]: await channel_send(next(chain), channel, "<@%s> h" % POKETWO)
             return main
 
-        @(bots[0]).event
+        @client.event
         async def on_message(message):
             nonlocal wild, hint
             try:
@@ -219,11 +219,11 @@ def helper(bots):
 
 def player(bots):
     if not bots: return ()
-    chain = repeat(bots)
+    chain = repeat(bots.values())
 
-    got = {channel: None for channel in CATCH}
+    client = next(bots.values().__iter__())
 
-    @(bots[0]).event
+    @client.event
     async def on_message(message):
         try:
             channel = message.channel.id
@@ -237,9 +237,7 @@ def player(bots):
                     print(f"[{now()}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{hint}")
                     result = Pokemon.find(hint)
                     if result:
-                        bot = next(chain)
-                        got[channel] = bot
-                        await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, result))
+                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, result))
                         print(f"[{now()}] [HINT] - {Fore.LIGHTGREEN_EX}Search Result: {Style.RESET_ALL}{result}")
                     else:
                         print(f"[{now()}] [ERROR] - {Fore.RED}Pokemon Not Founded In Database{Style.RESET_ALL}")
@@ -249,29 +247,25 @@ def player(bots):
                     if not match: return
                     hint = match.group(1)
                     print(f"[{now()}] [INFO] - {Fore.LIGHTGREEN_EX}{hint}{Style.RESET_ALL}")
-                    await guild_ack(got[channel], message.guild.id)
+                    await guild_ack(bots[message.mentions[0].id], message.guild.id)
 
                 elif content.startswith("That is the wrong pokémon!"):
                     print(f"[{now()}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
 
                 elif message.embeds and message.embeds[0].title.endswith("This pokémon appears to be glitched!"):
-                    await channel_send(got[channel], channel, "<@%s> afd fix %s" % (POKETWO, evsolve(message.embeds[0].image.url)))
+                    await channel_send(bots[message.mentions[0].id], channel, "<@%s> afd fix %s" % (POKETWO, evsolve(message.embeds[0].image.url)))
             
             if message.author.id == ASSIST:
                 content = message.content
 
                 if content.endswith("%"):
-                    bot = next(chain)
-                    got[channel] = bot
-                    await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
+                    await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
 
                 elif content.startswith("##"):
-                    bot = next(chain)
-                    got[channel] = bot
                     if content.startswith("## <:"):
-                        await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, content[3:].split("> ")[-1].split("【")[0]))
+                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content[3:].split("> ")[-1].split("【")[0]))
                     else:
-                        await channel_send(bot, channel, "<@%s> c %s" % (POKETWO, content[3:].split(" <:")[0]))
+                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content[3:].split(" <:")[0]))
 
         except Exception as e:
             print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
@@ -286,12 +280,14 @@ def main():
     for token in FARMER + HELPER + PLAYER:
         if token in bots: continue
         bots[token] = commands.Bot(command_prefix = "!")
+    loop.run_until_complete(
+        asyncio.gather(*(bot.login(token) for token, bot in bots.items()))
+    )
 
-    tasks = []
-    for task in farmer([bots[token] for token in FARMER]): tasks.append(task)
-    for task in helper([bots[token] for token in HELPER]): tasks.append(task)
-    for task in player([bots[token] for token in PLAYER]): tasks.append(task)
-    for token, bot in bots.items(): loop.create_task(bot.start(token))
+    tasks = [bot.connect for bot in bots.values()]
+    for task in farmer({bots[token].user.id: bots[token] for token in FARMER}): tasks.append(task)
+    for task in helper({bots[token].user.id: bots[token] for token in HELPER}): tasks.append(task)
+    for task in player({bots[token].user.id: bots[token] for token in PLAYER}): tasks.append(task)
     for task in tasks: loop.create_task(task())
     loop.run_forever()
 
