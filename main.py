@@ -39,9 +39,8 @@ Config = json.load(
 )
 
 POKETWO = 716390085896962058
-GUILD = Config["guild"]
-CATCH = Config["catch"]
-CHAT = Config["chat"]
+CATCH = set(Config["catch"])
+CHAT = set(Config["chat"])
 FARMER = Config["farmers"]
 HELPER = Config["helpers"]
 PLAYER = Config["players"]
@@ -74,9 +73,9 @@ async def channel_send(bot, channel_id, message):
     except Exception as e:
         print(f"[{now()}] [ERROR] - {Fore.RED}Error in channel_send: {e}{Style.RESET_ALL}")
 
-async def guild_ack(bot):
+async def guild_ack(bot, guild):
     try:
-        await bot.get_guild(GUILD).ack()
+        await bot.get_guild(guild).ack()
     except Exception as e:
         print(f"[{now()}] [ERROR] - {Fore.RED}Error in ack: {e}{Style.RESET_ALL}")
 
@@ -84,82 +83,90 @@ def farmer(bots):
     if not bots: return ()
     
     wait = 3.0 / (len(bots) + 1.0)
-    async def main():
-        for bot in repeat(bots):
-            await asyncio.sleep(wait)
-            await channel_send(bot, CHAT, base64.b64encode(os.urandom(15)).decode())
+    def proc(channel):
+        async def main():
+            for bot in repeat(bots):
+                await asyncio.sleep(wait)
+                await channel_send(bot, channel, base64.b64encode(os.urandom(15)).decode())
+        return main
     
-    return (main, )
+    return (proc(channel) for channel in CHAT)
 
 def helper(bots):
     if not bots: return ()
     chain = repeat(bots)
 
-    wild = False
-    hint = False
+    wild = {channel: False for channel in CATCH}
+    hint = {channel: False for channel in CATCH}
     if ASSIST:
-        wait = False
-        async def main():
-            nonlocal wait
-            while True:
-                await asyncio.sleep(5.0)
-                if not wild: continue
-                if wait:
-                    wait = False
-                    continue
-                await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
+        wait = {channel: False for channel in CATCH}
+        def proc(channel):
+            async def main():
+                nonlocal wait
+                while True:
+                    await asyncio.sleep(5.0)
+                    if not wild[channel]: continue
+                    if wait[channel]:
+                        wait[channel] = False
+                        continue
+                    await channel_send(next(chain), channel, "<@%s> h" % POKETWO)
+            return main
         
         @(bots[0]).event
         async def on_message(message):
             nonlocal wild, wait, hint
             try:
-                if message.channel.id != CATCH: return
+                channel = message.channel.id
+                if channel not in CATCH: return
                 if message.author.id == POKETWO:
                     if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
-                        hint = False
-                        wait = True
-                        wild = True
+                        hint[channel] = False
+                        wait[channel] = True
+                        wild[channel] = True
 
                     elif message.content.startswith("The pokémon is "):
-                        hint = True
+                        hint[channel] = True
 
-                    elif message.content.startswith("Congratulations") and hint:
-                        wild = False                    
+                    elif message.content.startswith("Congratulations") and hint[channel]:
+                        wild[channel] = False                    
 
                 elif message.author.id == ASSIST:
-                    hint = True
+                    hint[channel] = True
 
             except Exception as e:
                 print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
 
     else:
-        async def main():
-            while True:
-                await asyncio.sleep(3.5)
-                if wild: await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
+        def proc(channel):
+            async def main():
+                while True:
+                    await asyncio.sleep(3.5)
+                    if wild[channel]: await channel_send(next(chain), channel, "<@%s> h" % POKETWO)
+            return main
 
         @(bots[0]).event
         async def on_message(message):
             nonlocal wild, hint
             try:
-                if message.channel.id != CATCH: return
+                channel = message.channel.id
+                if channel not in CATCH: return
 
                 if message.author.id != POKETWO: return
                 if message.embeds and message.embeds[0].title.endswith("wild pokémon has appeared!"):
-                    hint = False
-                    wild = True
-                    await channel_send(next(chain), CATCH, "<@%s> h" % POKETWO)
+                    hint[channel] = False
+                    wild[channel] = True
+                    await channel_send(next(chain), channel, "<@%s> h" % POKETWO)
 
                 elif message.content.startswith("The pokémon is "):
-                    hint = True
+                    hint[channel] = True
 
-                elif message.content.startswith("Congratulations") and hint:
-                    wild = False
+                elif message.content.startswith("Congratulations") and hint[channel]:
+                    wild[channel] = False
 
             except Exception as e:
                 print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
             
-    return (main, )
+    return (proc(channel) for channel in CATCH)
 
 def player(bots):
     if not bots: return ()
@@ -168,7 +175,8 @@ def player(bots):
     @(bots[0]).event
     async def on_message(message):
         try:
-            if message.channel.id != CATCH: return
+            channel = message.channel.id
+            if channel not in CATCH: return
             if message.author.id == POKETWO:
                 content = message.content
                 if content.startswith("The pokémon is "):
@@ -176,7 +184,7 @@ def player(bots):
                     print(f"[{now()}] [HINT] - {Fore.YELLOW}Pokemon Hint: {Style.RESET_ALL}{hint}")
                     result = Pokemon.find(hint)
                     if result:
-                        await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, result))
+                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, result))
                         print(f"[{now()}] [HINT] - {Fore.LIGHTGREEN_EX}Search Result: {Style.RESET_ALL}{result}")
                     else:
                         print(f"[{now()}] [ERROR] - {Fore.RED}Pokemon Not Founded In Database{Style.RESET_ALL}")
@@ -186,7 +194,6 @@ def player(bots):
                     if not match: return
                     hint = match.group(1)
                     print(f"[{now()}] [INFO] - {Fore.LIGHTGREEN_EX}{hint}{Style.RESET_ALL}")
-                    for bot in bots: await guild_ack(bot)
 
                 elif content.startswith("That is the wrong pokémon!"):
                     print(f"[{now()}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
@@ -194,12 +201,12 @@ def player(bots):
             if message.author.id == ASSIST:
                 content = message.content
                 if content.endswith("%"):
-                    await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
+                    await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content.split(": ")[0]))
                 elif content.startswith("##"):
                     if content.startswith("## <:"):
-                        await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content[3:].split("> ")[-1].split("【")[0]))
+                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content[3:].split("> ")[-1].split("【")[0]))
                     else:
-                        await channel_send(next(chain), CATCH, "<@%s> c %s" % (POKETWO, content[3:].split(" <:")[0]))
+                        await channel_send(next(chain), channel, "<@%s> c %s" % (POKETWO, content[3:].split(" <:")[0]))
 
         except Exception as e:
             print(f"[{now()}] [ERROR] - {Fore.RED}Error in on_message: {Style.RESET_ALL}{e}")
