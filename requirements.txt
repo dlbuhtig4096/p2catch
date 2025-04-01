@@ -2,3 +2,6 @@ asyncio
 colorama
 discord
 discord.py-self
+requests
+numpy
+opencv-python

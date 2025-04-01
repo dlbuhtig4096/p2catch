@@ -1,12 +1,10 @@
+
+import os, json, base64, random, re, datetime, asyncio
 from discord.ext import commands
 from colorama import Fore, Style, init
-import asyncio
-import random
-import json
-import re
-import datetime
-import os
-import base64
+import requests
+import numpy as np
+import cv2
 
 class Repo(dict):
     _ = set()
@@ -66,6 +64,57 @@ now = lambda : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 def repeat(A):
     while True:
         for a in A: yield a
+
+def evsolve(url):
+    img = cv2.imdecode(
+        np.frombuffer(requests.get(url).content, np.uint8),
+        cv2.IMREAD_UNCHANGED
+    )
+    if img is None: return "ABCD"
+
+    h, w, c = img.shape
+    x = w >> 1
+    y = h >> 1
+    T = {
+        "A": (
+            max(img[ :y,   0, 3]),
+            max(img[  0,  :x, 3]),
+            max(img[ :y, x-1, 3]),
+            max(img[y-1,  :x, 3])
+        ),
+        "B": (
+            max(img[ :y,   x, 3]),
+            max(img[  0,  x:, 3]),
+            max(img[ :y, w-1, 3]),
+            max(img[y-1,  x:, 3])
+        ),
+        "C": (
+            max(img[ y:,   0, 3]),
+            max(img[  y,  :x, 3]),
+            max(img[ y:, x-1, 3]),
+            max(img[h-1,  :x, 3])
+        ),
+        "D": (
+            max(img[ y:,   x, 3]),
+            max(img[ y,   x:, 3]),
+            max(img[ y:, w-1, 3]),
+            max(img[h-1,  x:, 3])
+        )
+    }
+    R = []
+    for a, b in [[0, 1], [1, 2], [0, 3], [2, 3]]:
+        m = 256
+        M = ""
+        for k, v in T.items():
+            n = max(v[a], v[b])
+            if m < n: continue
+            m = n
+            M = k
+        del T[M]
+        R.append(M)
+    ans = "".join(R)
+    print(f"[{now()}] [INFO] - {Fore.YELLOW}Prdiction for ({h}, {w}, {c}) {url}: {ans}{Style.RESET_ALL}")
+    return ans
 
 async def channel_send(bot, channel_id, message):
     try:
@@ -171,7 +220,6 @@ def helper(bots):
 def player(bots):
     if not bots: return ()
     chain = repeat(bots)
-    guess = repeat(["BADC","BCDA","BDAC","CADB","CDAB","CDBA","DABC","DCAB","DCBA"])
 
     got = {channel: None for channel in CATCH}
 
@@ -207,10 +255,7 @@ def player(bots):
                     print(f"[{now()}] [INFO] - {Fore.RED}That is the wrong pokémon!{Style.RESET_ALL}")
 
                 elif message.embeds and message.embeds[0].title.endswith("This pokémon appears to be glitched!"):
-                    await channel_send(got[channel], channel, "<@%s> afd fix %s" % (POKETWO, next(guess)))
-
-                elif content.startswith("That's the wrong order!"):
-                    await channel_send(got[channel], channel, "<@%s> afd fix %s" % (POKETWO, next(guess)))
+                    await channel_send(got[channel], channel, "<@%s> afd fix %s" % (POKETWO, evsolve(message.embeds[0].image.url)))
             
             if message.author.id == ASSIST:
                 content = message.content
